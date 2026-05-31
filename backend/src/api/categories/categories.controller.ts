@@ -10,6 +10,7 @@ import {
 export const getCategories = async (_req: Request, res: Response) => {
   try {
     const categories = await Categories.find().lean();
+
     return res.status(200).json({ success: true, data: categories });
   } catch (error) {
     logger.error({ Error: error });
@@ -22,13 +23,17 @@ export const getCategories = async (_req: Request, res: Response) => {
 export const getCategoryById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const category = await Categories.findById(id).lean();
+
     if (!category) {
       return res
         .status(404)
         .json({ success: false, message: 'Category not found' });
     }
+
     const products = await Product.find({ categoryId: id }).lean();
+
     return res
       .status(200)
       .json({ success: true, data: { ...category, products } });
@@ -43,12 +48,15 @@ export const getCategoryById = async (req: Request, res: Response) => {
 export const createCategory = async (req: Request, res: Response) => {
   try {
     const parsed = createCategorySchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
         .json({ success: false, message: parsed.error.issues[0].message });
     }
+
     const category = await Categories.create(parsed.data);
+
     return res
       .status(201)
       .json({ success: true, message: 'Category created', data: category });
@@ -63,20 +71,25 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const parsed = updateCategorySchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
         .json({ success: false, message: parsed.error.issues[0].message });
     }
+
     const category = await Categories.findByIdAndUpdate(id, parsed.data, {
       new: true,
     });
+
     if (!category) {
       return res
         .status(404)
         .json({ success: false, message: 'Category not found' });
     }
+
     return res
       .status(200)
       .json({ success: true, message: 'Category updated', data: category });
@@ -91,12 +104,15 @@ export const updateCategory = async (req: Request, res: Response) => {
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const category = await Categories.findByIdAndDelete(id);
+
     if (!category) {
       return res
         .status(404)
         .json({ success: false, message: 'Category not found' });
     }
+
     return res.status(200).json({ success: true, message: 'Category deleted' });
   } catch (error) {
     logger.error({ Error: error });

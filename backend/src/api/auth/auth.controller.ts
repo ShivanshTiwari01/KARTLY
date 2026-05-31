@@ -17,7 +17,6 @@ import {
 } from '../../helpers/authentication';
 
 import User from '../../models/user.model';
-import UserProfile from '../../models/userProfile.model';
 import UserSession from '../../models/userSession.model';
 
 export const register = async (req: Request, res: Response) => {
@@ -162,6 +161,7 @@ export const signin = async (req: Request, res: Response) => {
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const parsed = forgotPasswordSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -169,9 +169,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     const { email } = parsed.data;
+
     const user = await User.findOne({ email });
 
-    // Don't leak whether the account exists
     if (!user) {
       return res.status(200).json({
         success: true,
@@ -181,6 +181,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     const token = crypto.randomBytes(32).toString('hex');
+
     const redis = getRedis();
     await redis.setex(`reset_password:${token}`, 3600, email);
 
@@ -200,6 +201,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const parsed = resetPasswordSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -207,6 +209,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 
     const { token, newPassword } = parsed.data;
+
     const redis = getRedis();
     const email = await redis.get(`reset_password:${token}`);
 
@@ -217,6 +220,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({ email });
+
     if (!user) {
       return res
         .status(404)
@@ -224,6 +228,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
+
     await User.findByIdAndUpdate(user._id, { password: hashedPassword });
     await redis.del(`reset_password:${token}`);
 
