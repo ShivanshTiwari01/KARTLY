@@ -6,9 +6,11 @@ import { logger } from '../../app';
 export const getWishlist = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
+
     const wishlist = await Wishlist.find({ userId })
       .populate('productId', 'name description summary')
       .lean();
+
     return res.status(200).json({ success: true, data: wishlist });
   } catch (error) {
     logger.error({ Error: error });
@@ -21,6 +23,7 @@ export const getWishlist = async (req: Request, res: Response) => {
 export const addToWishlist = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
+
     const { productId } = req.body;
 
     if (!productId) {
@@ -30,6 +33,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
     }
 
     const product = await Product.findById(productId);
+
     if (!product) {
       return res
         .status(404)
@@ -37,6 +41,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
     }
 
     const existing = await Wishlist.findOne({ userId, productId });
+
     if (existing) {
       return res
         .status(400)
@@ -44,6 +49,7 @@ export const addToWishlist = async (req: Request, res: Response) => {
     }
 
     const item = await Wishlist.create({ userId, productId });
+
     return res
       .status(201)
       .json({ success: true, message: 'Added to wishlist', data: item });
@@ -61,6 +67,7 @@ export const removeFromWishlist = async (req: Request, res: Response) => {
     const { productId } = req.params;
 
     const item = await Wishlist.findOneAndDelete({ userId, productId });
+
     if (!item) {
       return res
         .status(404)

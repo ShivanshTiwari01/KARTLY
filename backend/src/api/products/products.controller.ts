@@ -11,6 +11,7 @@ import {
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const parsed = getProductsQuerySchema.safeParse(req.query);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -25,10 +26,13 @@ export const getProducts = async (req: Request, res: Response) => {
       maxPrice,
       search,
     } = parsed.data;
+
     const skip = (pageNum - 1) * limitNum;
 
     const productFilter: Record<string, any> = {};
+
     if (category) productFilter.categoryId = category;
+
     if (search) productFilter.name = { $regex: search, $options: 'i' };
 
     const products = await Product.find(productFilter)
@@ -38,15 +42,19 @@ export const getProducts = async (req: Request, res: Response) => {
       .lean();
 
     const productIds = products.map((p) => p._id);
+
     const detailsFilter: Record<string, any> = {
       productId: { $in: productIds },
     };
+
     if (minPrice !== undefined)
       detailsFilter.price = { ...detailsFilter.price, $gte: minPrice };
+
     if (maxPrice !== undefined)
       detailsFilter.price = { ...detailsFilter.price, $lte: maxPrice };
 
     const allDetails = await ProductDetails.find(detailsFilter).lean();
+
     const detailsMap = new Map(allDetails.map((d) => [String(d.productId), d]));
 
     const result = products
@@ -81,15 +89,19 @@ export const getProducts = async (req: Request, res: Response) => {
 export const getProductById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const product = await Product.findById(id)
       .populate('categoryId', 'name description')
       .lean();
+
     if (!product) {
       return res
         .status(404)
         .json({ success: false, message: 'Product not found' });
     }
+
     const details = await ProductDetails.findOne({ productId: id }).lean();
+
     return res
       .status(200)
       .json({ success: true, data: { ...product, details: details ?? null } });
@@ -104,6 +116,7 @@ export const getProductById = async (req: Request, res: Response) => {
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const parsed = createProductSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -129,6 +142,7 @@ export const createProduct = async (req: Request, res: Response) => {
       summary,
       categoryId,
     });
+
     const details = await ProductDetails.create({
       productId: product._id,
       price,
@@ -155,7 +169,9 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const parsed = updateProductSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -176,6 +192,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     } = parsed.data;
 
     const productUpdate: Record<string, any> = {};
+
     if (name !== undefined) productUpdate.name = name;
     if (description !== undefined) productUpdate.description = description;
     if (summary !== undefined) productUpdate.summary = summary;
@@ -191,6 +208,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     }
 
     const detailsUpdate: Record<string, any> = {};
+
     if (price !== undefined) detailsUpdate.price = price;
     if (discountedPrice !== undefined)
       detailsUpdate.discountedPrice = discountedPrice;
@@ -221,13 +239,17 @@ export const updateProduct = async (req: Request, res: Response) => {
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
     const product = await Product.findByIdAndDelete(id);
+
     if (!product) {
       return res
         .status(404)
         .json({ success: false, message: 'Product not found' });
     }
+
     await ProductDetails.findOneAndDelete({ productId: id });
+
     return res
       .status(200)
       .json({ success: true, message: 'Product deleted successfully' });

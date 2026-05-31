@@ -12,13 +12,17 @@ import {
 export const getProfile = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
+
     const user = await User.findById(userId).select('-password').lean();
+
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: 'User not found' });
     }
+
     const profile = await UserProfile.findOne({ userId }).lean();
+
     return res
       .status(200)
       .json({ success: true, data: { ...user, profile: profile ?? null } });
@@ -33,7 +37,9 @@ export const getProfile = async (req: Request, res: Response) => {
 export const updateProfile = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
+
     const parsed = updateProfileSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -41,16 +47,22 @@ export const updateProfile = async (req: Request, res: Response) => {
     }
 
     const { firstName, lastName } = parsed.data;
+
     const existing = await UserProfile.findOne({ userId });
 
     let profile;
+
     if (existing) {
       const update: Record<string, any> = {};
+
       if (firstName !== undefined) update.firstName = firstName;
       if (lastName !== undefined) update.lastName = lastName;
+
       const newFirst = firstName ?? existing.firstName;
       const newLast = lastName ?? existing.lastName;
+
       update.fullName = `${newFirst} ${newLast}`;
+
       profile = await UserProfile.findOneAndUpdate({ userId }, update, {
         new: true,
       });
@@ -61,6 +73,7 @@ export const updateProfile = async (req: Request, res: Response) => {
           message: 'firstName and lastName are required to create a profile',
         });
       }
+
       profile = await UserProfile.create({
         firstName,
         lastName,
@@ -83,13 +96,17 @@ export const updateProfile = async (req: Request, res: Response) => {
 export const getAddresses = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
+
     const profile = await UserProfile.findOne({ userId });
+
     if (!profile) {
       return res.status(200).json({ success: true, data: [] });
     }
+
     const addresses = await UserAddress.find({
       userProfileId: profile._id,
     }).lean();
+
     return res.status(200).json({ success: true, data: addresses });
   } catch (error) {
     logger.error({ Error: error });
@@ -102,7 +119,9 @@ export const getAddresses = async (req: Request, res: Response) => {
 export const createAddress = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
+
     const parsed = createAddressSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -110,6 +129,7 @@ export const createAddress = async (req: Request, res: Response) => {
     }
 
     const profile = await UserProfile.findOne({ userId });
+
     if (!profile) {
       return res.status(400).json({
         success: false,
@@ -122,6 +142,7 @@ export const createAddress = async (req: Request, res: Response) => {
       ...parsed.data,
       userProfileId: profile._id,
     });
+
     return res
       .status(201)
       .json({ success: true, message: 'Address created', data: address });
@@ -137,7 +158,9 @@ export const updateAddress = async (req: Request, res: Response) => {
   try {
     const { userId } = req.user!;
     const { id } = req.params;
+
     const parsed = updateAddressSchema.safeParse(req.body);
+
     if (!parsed.success) {
       return res
         .status(400)
@@ -145,6 +168,7 @@ export const updateAddress = async (req: Request, res: Response) => {
     }
 
     const profile = await UserProfile.findOne({ userId });
+
     if (!profile) {
       return res
         .status(404)
@@ -156,6 +180,7 @@ export const updateAddress = async (req: Request, res: Response) => {
       parsed.data,
       { new: true }
     );
+
     if (!address) {
       return res
         .status(404)
@@ -179,6 +204,7 @@ export const deleteAddress = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const profile = await UserProfile.findOne({ userId });
+
     if (!profile) {
       return res
         .status(404)
@@ -189,6 +215,7 @@ export const deleteAddress = async (req: Request, res: Response) => {
       _id: id,
       userProfileId: profile._id,
     });
+
     if (!address) {
       return res
         .status(404)
